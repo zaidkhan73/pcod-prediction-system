@@ -106,10 +106,10 @@ export function Section1({ data, onChange, onNext }) {
    SECTION 2 — Menstrual Cycle
 ════════════════════════════════════════ */
 export function Section2({ data, onChange, onNext, onBack }) {
-  const days = data.cycleLen ?? 28;
-  const label = cycleLabel(days);
+  const days       = data.cycleLen ?? 28;
+  const label      = cycleLabel(days);
   const colorClass = cycleColor(days);
-  const irregular = isIrregular(days);
+  const irregular  = isIrregular(days);
 
   return (
     <div>
@@ -131,12 +131,12 @@ export function Section2({ data, onChange, onNext, onBack }) {
         {/* Auto-detected regularity badge */}
         <div className={`flex items-center gap-3 px-4 py-3 rounded-[10px] border ${colorClass} transition-all duration-300`}>
           <span className="text-xl">
-            {days <= 10 ? "🚫" : irregular ? "⚠️" : "✅"}
+            {days <= 15 ? "🚫" : irregular ? "⚠️" : "✅"}
           </span>
           <div>
             <p className="text-[0.78rem] font-semibold">{label}</p>
             <p className="text-[0.73rem] opacity-80 mt-0.5">
-              {days <= 10
+              {days <= 15
                 ? "This may indicate amenorrhoea. Please consult a doctor."
                 : irregular
                 ? "Cycles outside 21–35 days are flagged as irregular — a key PCOS indicator."
@@ -150,7 +150,6 @@ export function Section2({ data, onChange, onNext, onBack }) {
           <div className="bg-red-200 flex-[6]" title="< 21 (short/absent)" />
           <div className="bg-emerald-200 flex-[14]" title="21–35 (regular)" />
           <div className="bg-amber-200 flex-[25]" title="> 35 (long)" />
-          {/* marker */}
           <div
             className="absolute top-0 bottom-0 w-[3px] bg-plum-600 rounded-full transition-all duration-200"
             style={{ left: `${((days - 15) / (60 - 15)) * 100}%` }}
@@ -235,8 +234,9 @@ export function Section3({ data, onChange, onNext, onBack }) {
 
 /* ════════════════════════════════════════
    SECTION 4 — Lifestyle
+   `error` prop shows any backend submission error.
 ════════════════════════════════════════ */
-export function Section4({ data, onChange, onNext, onBack, submitting }) {
+export function Section4({ data, onChange, onNext, onBack, submitting, error }) {
   const [errors, setErrors] = useState({});
 
   function validate() {
@@ -335,7 +335,16 @@ export function Section4({ data, onChange, onNext, onBack, submitting }) {
           A sedentary lifestyle and diet high in processed food can worsen hormonal imbalance
           and elevate PCOS risk over time.
         </InfoBox>
+
+        {/* Backend submission error */}
+        {error && (
+          <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl p-3">
+            <span className="text-red-400 shrink-0">⚠️</span>
+            <p className="text-[0.8rem] text-red-600 leading-[1.5]">{error}</p>
+          </div>
+        )}
       </div>
+
       <NavButtons
         onBack={onBack}
         onNext={handleNext}
