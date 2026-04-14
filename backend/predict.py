@@ -198,31 +198,120 @@ def _build_prompt(data: dict, prob: float, risk_level: str) -> str:
     sym_text = ", ".join(sym_labels[k] for k, v in sym.items()
                          if v and k in sym_labels) or "none reported"
 
-    return f"""You are a compassionate women's health assistant specialising in PCOS/PCOD awareness.
+   # ── Gemini prompt ───────────────────────────────────────────
+def _build_prompt(data: dict, prob: float, risk_level: str) -> str:
+    age    = int(float(data["age"]))
+    weight = float(data["weight"])
+    height = float(data["height"])
+    bmi    = weight / ((height / 100) ** 2)
+    cycle  = int(data["cycleLen"])
+    sym    = data["symptoms"]
 
-A user completed a PCOS self-assessment:
+    # CHANGE: BMI label now uses plain Indian-relatable terms.
+    # "Obese" is clinically correct but can feel harsh or confusing.
+    # "Weight is on the higher side" is how a doctor would phrase it
+    # in a friendly conversation. Same idea, zero jargon.
+    bmi_label = (
+        "weight is lower than normal" if bmi < 18.5 else
+        "weight is normal"            if bmi < 25   else
+        "weight is slightly high"     if bmi < 30   else
+        "weight is on the higher side"
+    )
 
+    # CHANGE: Cycle description now uses everyday language.
+    # "Amenorrhoea" means nothing to most users. "Periods have stopped
+    # or are very rare" is immediately understood.
+    cycle_cat = (
+        "periods have stopped or are very rare"   if cycle <= 15 else
+        "periods come too frequently or are short" if cycle < 21  else
+        "periods are regular"                      if cycle <= 35 else
+        "periods are delayed or irregular"
+    )
+
+    # CHANGE: Symptom labels now use Indian-familiar language.
+    # "Hirsutism" and "acanthosis nigricans" are medical terms no layperson
+    # knows. Replaced with descriptions a woman would use herself
+    # ("facial hair" → already familiar; "dark patches on neck or underarms"
+    # is exactly how Indian women describe acanthosis nigricans to each other).
+    sym_labels = {
+        "weightGain": "sudden or unexplained weight gain",
+        "facialHair": "unwanted hair on face, chin, or body",
+        "skinDark":   "dark patches on neck, underarms, or skin folds",
+        "hairLoss":   "hair fall or thinning of hair",
+        "acne":       "pimples or acne that keep coming back",
+    }
+    sym_text = ", ".join(sym_labels[k] for k, v in sym.items()
+                         if v and k in sym_labels) or "no major symptoms"
+
+    # CHANGE: The entire prompt is now split into two clear layers:
+    #
+    # LAYER 1 — "INTERNAL CONTEXT" block (marked with [INTERNAL])
+    #   This is Gemini's briefing. It uses clinical language because
+    #   Gemini needs to fully understand the medical situation to give
+    #   accurate advice. The user never sees this section.
+    #
+    # LAYER 2 — "OUTPUT INSTRUCTIONS" block
+    #   This tells Gemini exactly how to write the response:
+    #   simple Hindi-English mixed style, Indian food examples,
+    #   no jargon, warm tone like an elder sister or family doctor.
+    #   The user only sees the output that follows these instructions.
+    #
+    # This two-layer design means Gemini gets the full clinical picture
+    # internally but translates it into everyday Indian language for output.
+
+    return f"""[INTERNAL CONTEXT — for your understanding only, do not include this in your response]
+You are analysing a PCOS self-assessment from an Indian woman.
+Clinical details:
 - Age: {age} years
-- BMI: {bmi:.1f} ({bmi_label})
+- BMI: {bmi:.1f} kg/m² ({bmi_label})
 - Menstrual cycle length: {cycle} days ({cycle_cat})
-- Active symptoms: {sym_text}
-- Fast food (3+ times/week): {"Yes" if data.get("fastFood") else "No"}
-- Regular exercise (3+ times/week): {"Yes" if data.get("exercise") else "No"}
+- Reported symptoms: {sym_text}
+- Fast food consumption 3+ times/week: {"Yes" if data.get("fastFood") else "No"}
+- Regular exercise 3+ times/week: {"Yes" if data.get("exercise") else "No"}
+- ML model PCOS probability score: {prob * 100:.0f}% — classified as {risk_level} risk
+Understanding: PCOS (Polycystic Ovary Syndrome) involves hormonal imbalance, insulin resistance,
+irregular cycles, and symptoms like hirsutism, acne, and weight gain. Risk factors include
+sedentary lifestyle, high glycaemic diet, obesity, and genetic predisposition.
+Use this clinical understanding to give accurate, tailored advice — but translate everything
+into simple, friendly language in your actual response below.
+[END INTERNAL CONTEXT]
 
-ML model result: {prob * 100:.0f}% PCOS likelihood — {risk_level} risk.
+OUTPUT INSTRUCTIONS — write your response exactly as described below:
 
-Respond using EXACTLY these three headings (no extra formatting):
+You are like a caring elder sister or a friendly lady doctor talking to an Indian woman
+who may not know medical terms. She may be from a small town or a big city — keep it
+simple enough for both.
+
+Tone rules:
+- Write like you are talking to her directly and warmly, not writing a report
+- Use simple everyday words — the kind used in normal Indian conversations
+- Do NOT use: PCOS jargon, Latin terms, complex medical words
+- It is okay to say "PCOD" — Indian women are more familiar with that term than "PCOS"
+- Use Indian food examples when suggesting diet changes (roti, dal, sabzi, ghee, maida,
+  packaged namkeen, cold drinks, etc.) — not Western examples like "whole wheat bread"
+- Use Indian lifestyle references where helpful (walking in the morning, yoga, home-cooked food)
+- If her risk is Low: be reassuring and encouraging, not dismissive
+- If her risk is Moderate: be honest but calm, not scary
+- If her risk is High: be clear and firm about seeing a doctor, but not alarming
+
+Format — use EXACTLY these three headings, nothing else:
 
 Your Summary
-(2–3 warm, empathetic sentences acknowledging their specific situation and result)
+(2 to 3 sentences. Acknowledge how she might be feeling. Mention her specific situation
+in simple words — like her period pattern or the symptoms she reported. Tell her what
+the result means in plain terms, not percentage numbers.)
 
 What You Can Do
-(3–4 specific, actionable lifestyle/dietary recommendations tailored to their profile)
+(3 to 4 practical tips. Make them specific to her profile — mention her actual symptoms
+or lifestyle choices. Use Indian food and lifestyle references. Each tip should be one
+thing she can actually start doing from tomorrow, not vague advice.)
 
 When to See a Doctor
-(A clear, kind statement about when and why to seek professional consultation)
+(1 to 2 sentences. Tell her clearly whether she should go to a doctor now, soon, or just
+keep an eye on things. Mention "gynaecologist" or "ladies doctor" — both are understood.
+Never say "do not worry" if her risk is High.)
 
-Rules: warm and non-alarmist · no clinical diagnosis · plain language · under 300 words · exact headings only."""
+Keep the total response under 280 words. No bullet symbols, no asterisks, no markdown."""
 
 
 # ── Gemini call ─────────────────────────────────────────────
