@@ -45,8 +45,6 @@ with open(_COLUMNS_PATH, "rb") as _f:
     _columns = pickle.load(_f)
 
 # ── Gemini client ───────────────────────────────────────────
-# Set GEMINI_API_KEY in your environment before starting Flask:
-#   export GEMINI_API_KEY="your-key-here"
 _GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 print("Gemini Key Loaded:", "YES" if _GEMINI_KEY else "NO")
 
@@ -95,10 +93,6 @@ def _age_outside_typical(age: float) -> float:
 
 
 # ── Validation ──────────────────────────────────────────────
-# Only checks that required fields are present and parseable.
-# Range enforcement is left entirely to the frontend form.
-# Out-of-range values are clipped to [0, 1] during normalisation,
-# so the model always receives valid input regardless.
 def _validate(data: dict) -> None:
     for key in ["age", "weight", "height", "cycleLen", "symptoms", "fastFood", "exercise"]:
         if key not in data:
@@ -207,10 +201,6 @@ def _build_prompt(data: dict, prob: float, risk_level: str) -> str:
     cycle  = int(data["cycleLen"])
     sym    = data["symptoms"]
 
-    # CHANGE: BMI label now uses plain Indian-relatable terms.
-    # "Obese" is clinically correct but can feel harsh or confusing.
-    # "Weight is on the higher side" is how a doctor would phrase it
-    # in a friendly conversation. Same idea, zero jargon.
     bmi_label = (
         "weight is lower than normal" if bmi < 18.5 else
         "weight is normal"            if bmi < 25   else
@@ -218,9 +208,7 @@ def _build_prompt(data: dict, prob: float, risk_level: str) -> str:
         "weight is on the higher side"
     )
 
-    # CHANGE: Cycle description now uses everyday language.
-    # "Amenorrhoea" means nothing to most users. "Periods have stopped
-    # or are very rare" is immediately understood.
+
     cycle_cat = (
         "periods have stopped or are very rare"   if cycle <= 15 else
         "periods come too frequently or are short" if cycle < 21  else
@@ -228,11 +216,6 @@ def _build_prompt(data: dict, prob: float, risk_level: str) -> str:
         "periods are delayed or irregular"
     )
 
-    # CHANGE: Symptom labels now use Indian-familiar language.
-    # "Hirsutism" and "acanthosis nigricans" are medical terms no layperson
-    # knows. Replaced with descriptions a woman would use herself
-    # ("facial hair" → already familiar; "dark patches on neck or underarms"
-    # is exactly how Indian women describe acanthosis nigricans to each other).
     sym_labels = {
         "weightGain": "sudden or unexplained weight gain",
         "facialHair": "unwanted hair on face, chin, or body",
@@ -242,22 +225,6 @@ def _build_prompt(data: dict, prob: float, risk_level: str) -> str:
     }
     sym_text = ", ".join(sym_labels[k] for k, v in sym.items()
                          if v and k in sym_labels) or "no major symptoms"
-
-    # CHANGE: The entire prompt is now split into two clear layers:
-    #
-    # LAYER 1 — "INTERNAL CONTEXT" block (marked with [INTERNAL])
-    #   This is Gemini's briefing. It uses clinical language because
-    #   Gemini needs to fully understand the medical situation to give
-    #   accurate advice. The user never sees this section.
-    #
-    # LAYER 2 — "OUTPUT INSTRUCTIONS" block
-    #   This tells Gemini exactly how to write the response:
-    #   simple Hindi-English mixed style, Indian food examples,
-    #   no jargon, warm tone like an elder sister or family doctor.
-    #   The user only sees the output that follows these instructions.
-    #
-    # This two-layer design means Gemini gets the full clinical picture
-    # internally but translates it into everyday Indian language for output.
 
     return f"""[INTERNAL CONTEXT — for your understanding only, do not include this in your response]
 You are analysing a PCOS self-assessment from an Indian woman.

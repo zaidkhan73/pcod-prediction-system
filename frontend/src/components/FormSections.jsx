@@ -285,7 +285,7 @@ export function Section4({ data, onChange, onNext, onBack, submitting, error }) 
                     ${active && val === true
                       ? "border-rose-400 bg-gradient-to-br from-rose-50 to-plum-100 text-rose-400 scale-[1.03] shadow-card-sm"
                       : active
-                      ? "border-plum-200 bg-plum-50 text-plum-600 scale-[1.03]"
+                      ? "border-rose-400 bg-gradient-to-br from-rose-50 to-plum-100 text-rose-400 scale-[1.03]"
                       : "border-plum-100 bg-cream text-plum-300 hover:border-plum-200 hover:text-plum-600 hover:bg-plum-50"
                     }`}
                 >
@@ -319,8 +319,8 @@ export function Section4({ data, onChange, onNext, onBack, submitting, error }) 
                     ${active && val === true
                       ? "border-rose-400 bg-gradient-to-br from-rose-50 to-plum-100 text-rose-400 scale-[1.03] shadow-card-sm"
                       : active
-                      ? "border-plum-200 bg-plum-50 text-plum-600 scale-[1.03]"
-                      : "border-plum-100 bg-cream text-plum-300 hover:border-plum-200 hover:text-plum-600 hover:bg-plum-50"
+                      ? "border-rose-400 bg-gradient-to-br from-rose-50 to-plum-100 text-rose-400 scale-[1.03]"
+                      : "border-plum-100 bg-plum-50 text-plum-600 hover:border-plum-200 hover:text-plum-600 hover:bg-plum-50"
                     }`}
                 >
                   {label}
